@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WYVN — We Build What Doesn't Exist Yet</title>
+  <meta name="description" content="WYVN is a cinematic web design & AI agency. Powered by ONYX Intelligence. Houston, TX."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+
+<!-- ═══════ CURSOR ═══════ -->
+<div id="cursor-dot"></div>
+<div id="cursor-ring"></div>
+<canvas id="cursor-trail"></canvas>
+
+<!-- ═══════ FILM GRAIN ═══════ -->
+<canvas id="grain-canvas"></canvas>
+
+<!-- ═══════ SCAN LINE ═══════ -->
+<div id="scan-line"></div>
+
+<!-- ═══════ VIGNETTE ═══════ -->
+<div id="vignette"></div>
+
+<!-- ═══════════════════════════════════
+     ENTRY EXPERIENCE
+═══════════════════════════════════ -->
+<div id="entry-screen">
+  <canvas id="particle-canvas-entry"></canvas>
+
+  <div id="boot-terminal">
+    <div id="boot-lines"></div>
+  </div>
+
+  <div id="entry-wordmark" class="hidden">
+    <div class="wordmark-text">W<span class="gold">Y</span>VN</div>
+    <div class="wordmark-sub">Web Services &amp; AI Design Studio</div>
+  </div>
+
+  <div id="entry-btn-wrap" class="hidden">
+    <div id="entry-speech" class="hidden"></div>
+    <button id="entry-btn">
+      <span class="entry-btn-inner">VERIFY</span>
+      <div class="entry-btn-ring"></div>
+    </button>
+  </div>
+</div>
+
+<!-- ═══════ GLITCH OVERLAY ═══════ -->
+<div id="glitch-overlay"></div>
+<div id="cinematic-bars">
+  <div class="bar bar-top"></div>
+  <div class="bar bar-bottom"></div>
+</div>
+
+<!-- ═══════════════════════════════════
+     MAIN SITE
+═══════════════════════════════════ -->
+<div id="main-site" class="hidden">
+
+  <!-- PARTICLE BG (runs everywhere) -->
+  <canvas id="particle-canvas"></canvas>
+
+  <!-- ═══════ NAV ═══════ -->
+  <nav id="navbar">
+    <div class="nav-inner">
+      <a href="#hero" class="nav-logo">
+        <span>W</span><span class="gold">Y</span><span>VN</span>
+      </a>
+      <div class="nav-links">
+        <a href="#onyx-section" class="nav-link magnetic">ONYX</a>
+        <a href="#demo-section" class="nav-link magnetic">Demo</a>
+        <a href="#services-section" class="nav-link magnetic">Services</a>
+        <a href="#pricing-section" class="nav-link magnetic">Pricing</a>
+        <a href="#contact-section" class="btn-nav magnetic">Get Started</a>
+      </div>
+      <button class="hamburger" id="hamburger">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- MOBILE NAV -->
+  <div id="mobile-nav">
+    <a href="#onyx-section" class="mob-link">ONYX</a>
+    <a href="#demo-section" class="mob-link">Demo</a>
+    <a href="#services-section" class="mob-link">Services</a>
+    <a href="#pricing-section" class="mob-link">Pricing</a>
+    <a href="#contact-section" class="mob-link cyan">Get Started</a>
+  </div>
+
+  <!-- ═══════ HERO ═══════ -->
+  <section id="hero">
+    <div class="hero-content">
+      <p class="hero-eyebrow reveal-text">Houston, TX · Est. 2025 · Powered by ONYX AI</p>
+
+      <h1 class="hero-headline">
+        <span class="reveal-line"><span>We build what</span></span>
+        <span class="reveal-line gold-italic"><span>doesn't exist yet.</span></span>
+      </h1>
+
+      <p class="hero-body reveal-text">
+        Two creatives. One AI named ONYX. A shared obsession with building digital
+        experiences that stop Fortune 500 CMOs cold and start conversations in boardrooms.
+      </p>
+
+      <div class="hero-btns reveal-text">
+        <button class="btn-primary magnetic" id="audit-trigger">
+          <span>Let ONYX See Your Site</span>
+          <div class="btn-glow"></div>
+        </button>
+        <a href="#services-section" class="btn-ghost magnetic">
+          <span>Our Services</span>
+        </a>
+      </div>
+
+      <div class="scroll-indicator">
+        <div class="scroll-line-v"></div>
+        <span>SCROLL</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ TICKER ═══════ -->
+  <div class="ticker-strip">
+    <div class="ticker-track">
+      <span>WYVN</span><span class="sep">·</span>
+      <span>Web Design</span><span class="sep">·</span>
+      <span>AI Integration</span><span class="sep">·</span>
+      <span>ONYX</span><span class="sep">·</span>
+      <span>Brand Identity</span><span class="sep">·</span>
+      <span>Digital Growth</span><span class="sep">·</span>
+      <span>Custom Code</span><span class="sep">·</span>
+      <span>No Templates</span><span class="sep">·</span>
+      <span>Houston TX</span><span class="sep">·</span>
+      <span>Fortune 500 Ready</span><span class="sep">·</span>
+      <span>Never Been Done</span><span class="sep">·</span>
+      <span>WYVN</span><span class="sep">·</span>
+      <span>Web Design</span><span class="sep">·</span>
+      <span>AI Integration</span><span class="sep">·</span>
+      <span>ONYX</span><span class="sep">·</span>
+      <span>Brand Identity</span><span class="sep">·</span>
+      <span>Digital Growth</span><span class="sep">·</span>
+      <span>Custom Code</span><span class="sep">·</span>
+      <span>No Templates</span><span class="sep">·</span>
+      <span>Houston TX</span><span class="sep">·</span>
+      <span>Fortune 500 Ready</span><span class="sep">·</span>
+      <span>Never Been Done</span><span class="sep">·</span>
+    </div>
+  </div>
+
+  <!-- ═══════ ONYX SECTION ═══════ -->
+  <section id="onyx-section" class="section">
+    <div class="section-inner">
+      <div class="onyx-left">
+        <p class="section-tag reveal-text">ONYX — Intelligence Layer</p>
+        <h2 class="section-headline">
+          <span class="reveal-line"><span>Not a chatbot.</span></span>
+          <span class="reveal-line gold-italic"><span>A co-pilot.</span></span>
+        </h2>
+        <p class="section-body reveal-text">
+          ONYX watches every visit. Reads scroll depth, hover time, cursor hesitation.
+          By the time a prospect hits contact, their custom proposal is already drafted.
+          Not a feature — a new category.
+        </p>
+        <div class="onyx-badge reveal-text">
+          <span class="badge-dot"></span>
+          Powered by Claude AI · ElevenLabs Voice
+        </div>
+      </div>
+
+      <div class="onyx-right">
+        <!-- ONYX Entity Visual -->
+        <div class="onyx-entity">
+          <canvas id="onyx-canvas"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ONYX Live Chat -->
+    <div class="onyx-chat-wrap">
+      <div class="onyx-chat-panel" id="onyx-chat">
+        <div class="chat-header">
+          <div class="chat-title">
+            <span class="chat-pulse"></span>
+            <span>ONYX // LIVE</span>
+          </div>
+          <div class="chat-header-right">
+            <button class="voice-btn" id="voice-toggle" title="Toggle Voice">🔊</button>
+          </div>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+          <div class="chat-msg onyx-msg">
+            <span class="msg-label">ONYX</span>
+            <p>I've been watching this visit. You didn't end up here by accident. What's actually going on with your website?</p>
+          </div>
+        </div>
+        <div class="chat-input-row">
+          <input type="text" id="chat-input" placeholder="Talk to ONYX..." autocomplete="off"/>
+          <button id="chat-send" class="magnetic">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 9h14M9 3l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ SITE AUDIT DEMO ═══════ -->
+  <section id="demo-section" class="section section-dark">
+    <div class="section-inner centered">
+      <p class="section-tag reveal-text">ONYX AUDIT ENGINE</p>
+      <h2 class="section-headline centered-h">
+        <span class="reveal-line"><span>Drop your URL.</span></span>
+        <span class="reveal-line gold-italic"><span>ONYX does the rest.</span></span>
+      </h2>
+      <p class="section-body centered-b reveal-text">
+        Real Google PageSpeed data. Real scores. Real recommendations. In seconds.
+      </p>
+
+      <div class="audit-box reveal-text">
+        <div class="audit-input-row">
+          <input type="url" id="audit-url" placeholder="https://yourwebsite.com" class="audit-input"/>
+          <button id="audit-btn" class="btn-primary magnetic">
+            <span id="audit-btn-text">Run Audit</span>
+            <div class="btn-glow"></div>
+          </button>
+        </div>
+        <div id="audit-results" class="audit-results hidden"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ PHILOSOPHY QUOTE ═══════ -->
+  <section class="section-quote">
+    <div class="quote-inner">
+      <div class="quote-line"></div>
+      <blockquote class="reveal-text">
+        "Most agencies build websites. We build the thing your competitor is going to be furious they didn't think of first."
+      </blockquote>
+      <cite class="reveal-text">WYVN — Brand Philosophy</cite>
+      <div class="quote-line"></div>
+    </div>
+  </section>
+
+  <!-- ═══════ STATS ═══════ -->
+  <section class="section-stats">
+    <div class="stats-inner">
+      <div class="stat-item reveal-text">
+        <div class="stat-number" data-target="48" data-suffix="hr">0</div>
+        <div class="stat-label">First Draft Delivered</div>
+      </div>
+      <div class="stat-item reveal-text">
+        <div class="stat-number" data-target="0" data-suffix="%">0</div>
+        <div class="stat-label">Templates Ever Used</div>
+      </div>
+      <div class="stat-item reveal-text">
+        <div class="stat-number" data-target="3" data-suffix="×">0</div>
+        <div class="stat-label">Avg Traffic Lift</div>
+      </div>
+      <div class="stat-item reveal-text">
+        <div class="stat-number" data-suffix="∞">∞</div>
+        <div class="stat-label">Revisions Until Perfect</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ SERVICES ═══════ -->
+  <section id="services-section" class="section">
+    <div class="section-inner">
+      <div class="services-header">
+        <p class="section-tag reveal-text">What We Build</p>
+        <h2 class="section-headline">
+          <span class="reveal-line"><span>Every weapon</span></span>
+          <span class="reveal-line gold-italic"><span>in the arsenal.</span></span>
+        </h2>
+      </div>
+      <div class="services-grid">
+        <div class="service-card reveal-text">
+          <div class="service-icon">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect x="2" y="4" width="28" height="22" rx="3" stroke="#00D4FF" stroke-width="1.5"/><path d="M2 10h28" stroke="#00D4FF" stroke-width="1.5"/><path d="M8 16h6M8 20h10" stroke="#00D4FF" stroke-width="1.2" stroke-linecap="round"/></svg>
+          </div>
+          <h3>Web Design & Dev</h3>
+          <p>Cinematic, conversion-engineered websites built entirely from scratch. Zero templates. Every pixel intentional.</p>
+        </div>
+        <div class="service-card reveal-text">
+          <div class="service-icon">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="12" stroke="#C9A96E" stroke-width="1.5"/><circle cx="16" cy="16" r="6" stroke="#C9A96E" stroke-width="1"/><circle cx="16" cy="16" r="2" fill="#C9A96E"/></svg>
+          </div>
+          <h3>Brand Identity</h3>
+          <p>Logos, visual systems, voice and tone guides. The full brand DNA — built to be unforgettable and legally defensible.</p>
+        </div>
+        <div class="service-card reveal-text">
+          <div class="service-icon">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><polygon points="16,3 29,26 3,26" stroke="#6B2FD4" stroke-width="1.5" fill="none"/><circle cx="16" cy="19" r="2.5" fill="#6B2FD4"/><path d="M16 11v5" stroke="#6B2FD4" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <h3>ONYX AI Integration</h3>
+          <p>Wire ONYX directly into your product. Real intelligence — not a widget. Qualifies leads, books calls, closes deals.</p>
+        </div>
+        <div class="service-card reveal-text">
+          <div class="service-icon">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M6 26l5-9 5 5 5-8 5 12" stroke="#00D4FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <h3>SEO & Speed</h3>
+          <p>Core Web Vitals. Schema. Technical SEO. We don't just build fast — we build ranked.</p>
+        </div>
+        <div class="service-card reveal-text">
+          <div class="service-icon">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect x="4" y="8" width="24" height="16" rx="2" stroke="#C9A96E" stroke-width="1.5"/><path d="M16 4v4M12 28h8" stroke="#C9A96E" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <h3>E-Commerce & Apps</h3>
+          <p>Revenue-generating storefronts and custom web apps. Empire-tier builds that scale without breaking.</p>
+        </div>
+        <div class="service-card reveal-text">
+          <div class="service-icon">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M4 16h3l4-8 5 16 4-10 3 5 4-3h5" stroke="#6B2FD4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <h3>Digital Strategy</h3>
+          <p>Funnel architecture, conversion rate optimization, analytics setup. Strategy that makes every dollar accountable.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ PRICING ═══════ -->
+  <section id="pricing-section" class="section section-dark">
+    <div class="section-inner centered">
+      <p class="section-tag reveal-text">Transparent Pricing</p>
+      <h2 class="section-headline centered-h">
+        <span class="reveal-line"><span>No smoke.</span></span>
+        <span class="reveal-line gold-italic"><span>No mirrors.</span></span>
+      </h2>
+
+      <div class="pricing-grid">
+
+        <div class="pricing-card reveal-text">
+          <div class="pricing-tier">STARTER</div>
+          <div class="pricing-price">$1,500 <span class="price-note">one-time</span></div>
+          <ul class="pricing-features">
+            <li class="active">5-Page Custom Website</li>
+            <li class="active">Mobile-First Design</li>
+            <li class="active">Contact Form + SEO Basics</li>
+            <li class="active">SSL + Hosting Setup</li>
+            <li class="active">30 Days Support</li>
+            <li class="inactive">Brand Identity System</li>
+            <li class="inactive">AI / ONYX Integration</li>
+          </ul>
+          <a href="#contact-section" class="btn-pricing magnetic">Get Started</a>
+        </div>
+
+        <div class="pricing-card featured reveal-text">
+          <div class="popular-badge">MOST POPULAR</div>
+          <div class="pricing-tier">GROWTH</div>
+          <div class="pricing-price">$3,500 <span class="price-note">one-time</span></div>
+          <ul class="pricing-features">
+            <li class="active">10-Page Custom Website</li>
+            <li class="active">Full Brand Identity System</li>
+            <li class="active">SEO & Speed Optimization</li>
+            <li class="active">ONYX AI Integration</li>
+            <li class="active">90 Days Support</li>
+            <li class="active">Monthly Performance Report</li>
+            <li class="inactive">E-Commerce</li>
+          </ul>
+          <a href="#contact-section" class="btn-primary magnetic">
+            <span>Let's Build</span>
+            <div class="btn-glow"></div>
+          </a>
+        </div>
+
+        <div class="pricing-card reveal-text">
+          <div class="pricing-tier">EMPIRE</div>
+          <div class="pricing-price">Custom <span class="price-note">quote</span></div>
+          <ul class="pricing-features">
+            <li class="active">Unlimited Pages & Features</li>
+            <li class="active">E-Commerce / App Builds</li>
+            <li class="active">Full Brand System</li>
+            <li class="active">Full ONYX AI Suite</li>
+            <li class="active">Ongoing Monthly Partner</li>
+            <li class="active">Priority Access to WYVN</li>
+          </ul>
+          <a href="#contact-section" class="btn-pricing magnetic">Talk to Us</a>
+        </div>
+
+      </div>
+      <p class="pricing-note reveal-text">50% deposit to start · Monthly retainers from $500/mo · Payment plans available</p>
+    </div>
+  </section>
+
+  <!-- ═══════ TESTIMONIALS ═══════ -->
+  <section class="section">
+    <div class="section-inner centered">
+      <p class="section-tag reveal-text">Social Proof</p>
+      <h2 class="section-headline centered-h">
+        <span class="reveal-line"><span>Clients who took</span></span>
+        <span class="reveal-line gold-italic"><span>the leap.</span></span>
+      </h2>
+
+      <div class="testimonials-grid">
+        <div class="testimonial-card reveal-text">
+          <p>"I handed them a napkin sketch and a vibe. They came back with something I couldn't believe. Leads tripled in 30 days."</p>
+          <div class="t-author">
+            <div class="t-avatar">MR</div>
+            <div>
+              <div class="t-name">Marcus R.</div>
+              <div class="t-role">Founder, TradeGo Logistics</div>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial-card reveal-text">
+          <p>"Every other agency sent a 12-page proposal. WYVN sent me a working mockup. Signed the same week."</p>
+          <div class="t-author">
+            <div class="t-avatar">JL</div>
+            <div>
+              <div class="t-name">Jordan L.</div>
+              <div class="t-role">CEO, Apex Fitness Studios</div>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial-card reveal-text">
+          <p>"They didn't build a website — they built us a brand. People constantly ask who did our site."</p>
+          <div class="t-author">
+            <div class="t-avatar">AT</div>
+            <div>
+              <div class="t-name">Alicia T.</div>
+              <div class="t-role">Owner, Bloom Med Spa</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ FINAL CTA ═══════ -->
+  <section id="contact-section" class="section section-cta">
+    <div class="cta-watermark">WYVN</div>
+    <div class="section-inner centered">
+      <p class="section-tag reveal-text">The Final Frame</p>
+      <h2 class="section-headline centered-h">
+        <span class="reveal-line"><span>Ready to stop</span></span>
+        <span class="reveal-line gold-italic"><span>looking ordinary?</span></span>
+      </h2>
+      <p class="section-body centered-b reveal-text">
+        One conversation. ONYX does the analysis. We handle everything else.
+      </p>
+
+      <div class="contact-form-wrap reveal-text">
+        <form id="contact-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Your Name</label>
+              <input type="text" name="name" placeholder="Wade Wilson" required/>
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" name="email" placeholder="wade@example.com" required/>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Company</label>
+              <input type="text" name="company" placeholder="Deadpool Inc."/>
+            </div>
+            <div class="form-group">
+              <label>Website URL</label>
+              <input type="url" name="url" placeholder="https://yoursite.com"/>
+            </div>
+          </div>
+          <div class="form-group full">
+            <label>What's your goal?</label>
+            <textarea name="goal" rows="4" placeholder="Tell ONYX what you're trying to build..." required></textarea>
+          </div>
+          <div class="form-group full">
+            <label>Package Interest</label>
+            <select name="package">
+              <option value="">Select a package</option>
+              <option>Starter — $1,500</option>
+              <option>Growth — $3,500 (Most Popular)</option>
+              <option>Empire — Custom Quote</option>
+              <option>Not sure yet</option>
+            </select>
+          </div>
+          <button type="submit" class="btn-primary full-btn magnetic">
+            <span id="form-btn-text">Book a Free ONYX Audit</span>
+            <div class="btn-glow"></div>
+          </button>
+        </form>
+        <div id="form-success" class="form-success hidden">
+          <div class="success-icon">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="18" stroke="#00D4FF" stroke-width="1.5"/><path d="M12 20l6 6 10-12" stroke="#00D4FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <h3>ONYX is preparing your analysis.</h3>
+          <p>Response within 2 hours. Check hello@wyvn.io if you don't hear from us.</p>
+        </div>
+      </div>
+
+      <p class="cta-note reveal-text">Response within 2 hours · No cold pitch · hello@wyvn.io</p>
+    </div>
+  </section>
+
+  <!-- ═══════ FOOTER ═══════ -->
+  <footer id="footer">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <div class="footer-logo">W<span class="gold">Y</span>VN</div>
+        <p class="footer-tagline">We build what doesn't exist yet.</p>
+        <p class="footer-location">Houston, TX · <a href="mailto:hello@wyvn.io">hello@wyvn.io</a></p>
+      </div>
+      <div class="footer-cols">
+        <div class="footer-col">
+          <h4>Services</h4>
+          <a href="#services-section">Web Design</a>
+          <a href="#services-section">AI Integration</a>
+          <a href="#services-section">Brand Identity</a>
+          <a href="#services-section">E-Commerce</a>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <a href="#onyx-section">ONYX AI</a>
+          <a href="#demo-section">Free Audit</a>
+          <a href="#pricing-section">Pricing</a>
+          <a href="#contact-section">Contact</a>
+        </div>
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <a href="#" id="privacy-link">Privacy Policy</a>
+          <a href="#" id="terms-link">Terms of Service</a>
+          <a href="mailto:legal@wyvn.io">legal@wyvn.io</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2025 WYVN LLC · All rights reserved · Houston, Texas</span>
+      <span class="footer-powered">Powered by <span class="gold">ONYX</span></span>
+    </div>
+  </footer>
+
+</div><!-- /main-site -->
+
+<!-- ═══════ ONYX FLOATING PANEL ═══════ -->
+<div id="onyx-float" class="hidden">
+  <div class="float-header">
+    <div class="float-title">
+      <span class="float-pulse"></span>
+      <span>ONYX // LIVE</span>
+    </div>
+    <button id="float-close">×</button>
+  </div>
+  <div class="float-body">
+    <p id="float-msg">Welcome. I'm ONYX — WYVN's intelligence layer. I'll be here.</p>
+  </div>
+  <div class="float-footer">
+    <input type="text" id="float-input" placeholder="Ask ONYX..."/>
+    <button id="float-send">→</button>
+  </div>
+</div>
+
+<!-- Reopen button -->
+<button id="onyx-reopen" class="hidden" title="Chat with ONYX">
+  <span class="float-pulse"></span>
+  ONYX
+</button>
+
+<!-- ═══════ MODALS ═══════ -->
+<div id="modal-overlay" class="hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title"></h3>
+      <button id="modal-close">×</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- AUDIT URL MODAL -->
+<div id="audit-modal" class="hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Let ONYX Audit Your Site</h3>
+      <button id="audit-modal-close">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--muted);margin-bottom:1.5rem;">Enter your URL and ONYX will run a real Google PageSpeed audit on it.</p>
+      <div class="audit-input-row">
+        <input type="url" id="audit-modal-url" placeholder="https://yourwebsite.com" class="audit-input"/>
+        <button id="audit-modal-btn" class="btn-primary magnetic">
+          <span id="audit-modal-btn-text">Run Audit</span>
+          <div class="btn-glow"></div>
+        </button>
+      </div>
+      <div id="audit-modal-results" class="audit-results"></div>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
