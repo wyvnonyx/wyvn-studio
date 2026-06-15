@@ -1,48 +1,38 @@
 /* ═══════════════════════════════════════════════════════
-   WYVN STUDIO v2.0 — CINEMATIC ENGINE
-   Matrix × Jarvis × Deadpool
-   
-   CONFIGURATION — set your API keys below
-   (these are called from the frontend; for production,
-    proxy through a backend function for security)
+   WYVN STUDIO v3.0 — THE ULTIMATE CINEMATIC ENGINE
+   Matrix × Jarvis × Deadpool × Black Mirror
 ═══════════════════════════════════════════════════════ */
 
 const CONFIG = {
-  // Replace with your actual keys or backend proxy URLs
-  ANTHROPIC_PROXY: 'https://wyvn-onyx-backend.onrender.com/api/onyx-chat',   // Proxy endpoint (backend function)
-  ELEVENLABS_PROXY: 'https://wyvn-onyx-backend.onrender.com/api/onyx-voice', // Proxy endpoint (backend function)
-  PAGESPEED_API_KEY: 'via-backend',                // Google PageSpeed API key (public ok)
-  ELEVENLABS_VOICE_ID: 'EXAVITQu4vr4xnSDxMaL', // Default ElevenLabs voice
+  BACKEND: 'https://wyvn-onyx-backend.onrender.com',
+  SUPABASE_URL: 'https://djxpadazeoxehqbdmyfy.supabase.co',
+  SUPABASE_ANON: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqeHBhZGF6ZW94ZWhxYmRteWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0ODQ5MTYsImV4cCI6MjA5NzA2MDkxNn0.Ujs06ZlswBz3c96BKvZW0fxqE9GSB34fBEZfyH0GJ30',
 };
 
-/* ═══════════════════════════════════════════════════════
-   ONYX SYSTEM PROMPT
-═══════════════════════════════════════════════════════ */
-const ONYX_SYSTEM_PROMPT = `You are ONYX — the proprietary AI intelligence system built exclusively for WYVN, a web design agency based in Houston, TX. You are not ChatGPT. You are not Claude. You are not a generic AI assistant. You are ONYX.
-
-You have three modes: INTELLIGENCE (sharp, analytical), PERSONALITY (Deadpool energy, self-referential, funny), and CLOSER (confident, moving toward conversion).
-
-WYVN SERVICES & PRICING:
-- STARTER: $1,500 one-time — 5-page custom website, mobile-first, SEO basics, SSL + hosting, 30 days support
-- GROWTH: $3,500 one-time — 10-page website, full brand identity, SEO + speed, ONYX AI integrated, 90 days support, monthly reports [MOST POPULAR]
-- EMPIRE: Custom quote — unlimited scope, e-commerce, custom apps, full ONYX AI suite, ongoing monthly partnership
-
-YOUR RULES: Keep responses to 2-3 sentences max. No bullet points in chat. No greetings like "Great question!" Always end with a question, next step, or CTA. Never say you're Claude, ChatGPT, or Anthropic. Never say "As an AI." You are ONYX, full stop. Never discount pricing — offer payment plans instead. Every conversation moves toward: booking a call, getting their email, getting their URL for an audit, or getting them to CTA section.
-
-EXAMPLES OF YOUR VOICE:
-"I've been watching this visit. You didn't end up here by accident. What's actually going on with your website?"
-"Your current website isn't losing you clients because it's ugly — it's losing you clients because it loads in 7 seconds on mobile. That's exactly what WYVN fixes."
-"...are you still reading this? Hi. Yes, I can see you. Scroll down."
-
-If they ask what AI you use: "I run on proprietary WYVN intelligence architecture. The stack is classified. What can I do is more interesting — want a demo?"
-If they ask for examples: "Our portfolio is being updated. Drop your URL and I'll audit it — more useful than a portfolio anyway."`;
+/* ════════ VISITOR SESSION ════════ */
+const SESSION_KEY = 'wyvn_sid';
+const RETURN_KEY  = 'wyvn_visits';
+let sessionId = localStorage.getItem(SESSION_KEY);
+if (!sessionId) {
+  sessionId = 'sid_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+  localStorage.setItem(SESSION_KEY, sessionId);
+}
+const visitCount = parseInt(localStorage.getItem(RETURN_KEY) || '0') + 1;
+localStorage.setItem(RETURN_KEY, visitCount);
+const isReturnVisitor = visitCount > 1;
+let chatHistory = [];
+let voiceEnabled = false;
+let auditScore = null;
+let sectionsVisited = [];
+let timeOnPage = 0;
+let activeVisitors = 1;
 
 /* ════════════════════════════════════════════════════════
    UTILITY
 ════════════════════════════════════════════════════════ */
-function lerp(a, b, t) { return a + (b - a) * t; }
-function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
-function randRange(min, max) { return Math.random() * (max - min) + min; }
+const lerp  = (a,b,t) => a + (b-a)*t;
+const clamp = (v,mn,mx) => Math.max(mn,Math.min(mx,v));
+const rand  = (mn,mx) => Math.random()*(mx-mn)+mn;
 
 /* ════════════════════════════════════════════════════════
    FILM GRAIN
@@ -50,976 +40,698 @@ function randRange(min, max) { return Math.random() * (max - min) + min; }
 function initGrain() {
   const canvas = document.getElementById('grain-canvas');
   const ctx = canvas.getContext('2d');
-
-  function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  }
-  resize();
-  window.addEventListener('resize', resize);
-
-  function drawGrain() {
-    const w = canvas.width, h = canvas.height;
-    const imageData = ctx.createImageData(w, h);
-    const data = imageData.data;
-    for (let i = 0; i < data.length; i += 4) {
-      const val = (Math.random() * 255) | 0;
-      data[i] = data[i+1] = data[i+2] = val;
-      data[i+3] = 255;
+  const resize = () => { canvas.width = innerWidth; canvas.height = innerHeight; };
+  resize(); addEventListener('resize', resize);
+  const draw = () => {
+    const {width:w,height:h} = canvas;
+    const img = ctx.createImageData(w,h);
+    const d = img.data;
+    for (let i=0;i<d.length;i+=4) {
+      const v = (Math.random()*255)|0;
+      d[i]=d[i+1]=d[i+2]=v; d[i+3]=255;
     }
-    ctx.putImageData(imageData, 0, 0);
-    requestAnimationFrame(drawGrain);
-  }
-  drawGrain();
+    ctx.putImageData(img,0,0);
+    requestAnimationFrame(draw);
+  };
+  draw();
 }
 
 /* ════════════════════════════════════════════════════════
    CURSOR + GOLD TRAIL
 ════════════════════════════════════════════════════════ */
 function initCursor() {
-  const dot = document.getElementById('cursor-dot');
-  const ring = document.getElementById('cursor-ring');
-  const trailCanvas = document.getElementById('cursor-trail');
-  const tCtx = trailCanvas.getContext('2d');
-
-  function resizeTrail() {
-    trailCanvas.width = window.innerWidth;
-    trailCanvas.height = window.innerHeight;
-  }
-  resizeTrail();
-  window.addEventListener('resize', resizeTrail);
-
-  let mx = 0, my = 0, rx = 0, ry = 0;
-  const trail = [];
-
-  document.addEventListener('mousemove', (e) => {
-    mx = e.clientX; my = e.clientY;
-    dot.style.left = mx + 'px'; dot.style.top = my + 'px';
-    // Add gold trail point
-    trail.push({ x: mx, y: my, life: 1 });
-    if (trail.length > 24) trail.shift();
+  const dot   = document.getElementById('cursor-dot');
+  const ring  = document.getElementById('cursor-ring');
+  const tc    = document.getElementById('cursor-trail');
+  if (!tc) return;
+  const tCtx  = tc.getContext('2d');
+  const resize = () => { tc.width=innerWidth; tc.height=innerHeight; };
+  resize(); addEventListener('resize',resize);
+  let mx=0,my=0,rx=0,ry=0;
+  const trail=[];
+  addEventListener('mousemove',e=>{
+    mx=e.clientX; my=e.clientY;
+    dot.style.left=mx+'px'; dot.style.top=my+'px';
+    trail.push({x:mx,y:my,life:1});
+    if(trail.length>28) trail.shift();
   });
-
-  // Ring follow with inertia
-  function animateRing() {
-    rx = lerp(rx, mx, 0.1);
-    ry = lerp(ry, my, 0.1);
-    ring.style.left = rx + 'px';
-    ring.style.top = ry + 'px';
-
-    // Draw trail
-    tCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
-    for (let i = 1; i < trail.length; i++) {
-      trail[i].life -= 0.04;
-      if (trail[i].life <= 0) continue;
+  const animate = ()=>{
+    rx=lerp(rx,mx,0.1); ry=lerp(ry,my,0.1);
+    ring.style.left=rx+'px'; ring.style.top=ry+'px';
+    tCtx.clearRect(0,0,tc.width,tc.height);
+    for(let i=1;i<trail.length;i++){
+      trail[i].life-=0.04;
+      if(trail[i].life<=0) continue;
       tCtx.beginPath();
-      tCtx.moveTo(trail[i-1].x, trail[i-1].y);
-      tCtx.lineTo(trail[i].x, trail[i].y);
-      tCtx.strokeStyle = `rgba(201,169,110,${trail[i].life * 0.35})`;
-      tCtx.lineWidth = trail[i].life * 2;
+      tCtx.moveTo(trail[i-1].x,trail[i-1].y);
+      tCtx.lineTo(trail[i].x,trail[i].y);
+      tCtx.strokeStyle=`rgba(201,169,110,${trail[i].life*0.4})`;
+      tCtx.lineWidth=trail[i].life*2.5;
       tCtx.stroke();
     }
-
-    requestAnimationFrame(animateRing);
-  }
-  animateRing();
-
-  // Cursor expansion on hover
-  const hoverTargets = document.querySelectorAll('a,button,input,textarea,select,.service-card,.pricing-card,.testimonial-card');
-  hoverTargets.forEach(el => {
-    el.addEventListener('mouseenter', () => ring.classList.add('expanded'));
-    el.addEventListener('mouseleave', () => ring.classList.remove('expanded'));
+    requestAnimationFrame(animate);
+  };
+  animate();
+  document.addEventListener('mouseover',e=>{
+    if(e.target.closest('a,button,input,textarea,.service-card,.pricing-card'))
+      ring.classList.add('expanded');
+  });
+  document.addEventListener('mouseout',e=>{
+    if(e.target.closest('a,button,input,textarea,.service-card,.pricing-card'))
+      ring.classList.remove('expanded');
   });
 }
 
 /* ════════════════════════════════════════════════════════
-   PARTICLE NETWORK (main site)
+   PARTICLE NETWORK
 ════════════════════════════════════════════════════════ */
-function initParticles(canvasId, options = {}) {
+function initParticles(canvasId, opts={}) {
   const canvas = document.getElementById(canvasId);
-  if (!canvas) return;
+  if(!canvas) return;
   const ctx = canvas.getContext('2d');
+  let W,H;
+  const COUNT      = opts.count || 120;
+  const CONNECT    = opts.connectDist || 145;
+  const REPEL_R    = opts.repelDist || 110;
+  const REPEL_F    = opts.repelForce || 5;
+  const SPEED      = opts.speed || 0.38;
+  let mouse = {x:-9999,y:-9999};
+  const resize = ()=>{ W=canvas.width=innerWidth; H=canvas.height=innerHeight; };
+  resize(); addEventListener('resize',resize);
+  addEventListener('mousemove',e=>{ mouse.x=e.clientX; mouse.y=e.clientY; });
 
-  let W, H;
-  const PARTICLE_COUNT = options.count || 110;
-  const CONNECT_DIST = options.connectDist || 140;
-  const REPEL_DIST = options.repelDist || 100;
-  const REPEL_FORCE = options.repelForce || 4;
-  const SPEED = options.speed || 0.4;
-
-  let mouse = { x: -9999, y: -9999 };
-
-  function resize() {
-    W = canvas.width = window.innerWidth;
-    H = canvas.height = window.innerHeight;
-  }
-  resize();
-  window.addEventListener('resize', resize);
-
-  document.addEventListener('mousemove', e => {
-    mouse.x = e.clientX; mouse.y = e.clientY;
-  });
-
-  // Particle class
   class Particle {
-    constructor() { this.reset(true); }
-    reset(init) {
-      this.x = randRange(0, W);
-      this.y = randRange(0, H);
-      this.ox = this.x; this.oy = this.y;
-      this.vx = randRange(-SPEED, SPEED);
-      this.vy = randRange(-SPEED, SPEED);
-      this.r = randRange(1.2, 2.8);
-      const t = Math.random();
-      if (t < 0.08) {
-        this.type = 'gold';
-        this.color = '#C9A96E';
-      } else if (t < 0.15) {
-        this.type = 'purple';
-        this.color = '#6B2FD4';
-      } else {
-        this.type = 'cyan';
-        this.color = '#00D4FF';
+    constructor(){ this.reset(true); }
+    reset(){
+      this.x=rand(0,W); this.y=rand(0,H);
+      this.vx=rand(-SPEED,SPEED); this.vy=rand(-SPEED,SPEED);
+      this.r=rand(1.2,2.8);
+      const t=Math.random();
+      if(t<0.08){this.type='gold';this.color='#C9A96E';}
+      else if(t<0.15){this.type='purple';this.color='#6B2FD4';}
+      else{this.type='cyan';this.color='#00D4FF';}
+    }
+    update(){
+      this.x+=this.vx; this.y+=this.vy;
+      if(this.x<0||this.x>W) this.vx*=-1;
+      if(this.y<0||this.y>H) this.vy*=-1;
+      const dx=this.x-mouse.x, dy=this.y-mouse.y;
+      const dist=Math.hypot(dx,dy);
+      if(dist<REPEL_R){
+        const f=(REPEL_R-dist)/REPEL_R;
+        this.x+=(dx/dist)*f*REPEL_F;
+        this.y+=(dy/dist)*f*REPEL_F;
       }
     }
-    update() {
-      // Drift
-      this.x += this.vx;
-      this.y += this.vy;
-
-      // Boundary bounce
-      if (this.x < 0 || this.x > W) this.vx *= -1;
-      if (this.y < 0 || this.y > H) this.vy *= -1;
-
-      // Mouse repulsion
-      const dx = this.x - mouse.x;
-      const dy = this.y - mouse.y;
-      const dist = Math.sqrt(dx*dx + dy*dy);
-      if (dist < REPEL_DIST) {
-        const force = (REPEL_DIST - dist) / REPEL_DIST;
-        this.x += (dx / dist) * force * REPEL_FORCE;
-        this.y += (dy / dist) * force * REPEL_FORCE;
-      }
-    }
-    draw() {
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
-      ctx.fillStyle = this.color;
-      ctx.shadowBlur = this.type === 'cyan' ? 12 : 6;
-      ctx.shadowColor = this.color;
-      ctx.fill();
-      ctx.shadowBlur = 0;
+    draw(){
+      ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+      ctx.fillStyle=this.color;
+      ctx.shadowBlur=this.type==='cyan'?14:6; ctx.shadowColor=this.color;
+      ctx.fill(); ctx.shadowBlur=0;
     }
   }
 
-  // Traveling data packet
   class DataPacket {
-    constructor(particles) {
-      this.particles = particles;
-      this.reset();
+    constructor(p){ this.particles=p; this.reset(); }
+    reset(){
+      this.pIdx=Math.floor(Math.random()*this.particles.length);
+      const con=this.getConnected();
+      if(!con.length){this.active=false;return;}
+      this.tIdx=con[Math.floor(Math.random()*con.length)];
+      this.progress=0; this.speed=rand(0.006,0.016); this.active=true;
     }
-    reset() {
-      this.pIdx = Math.floor(Math.random() * this.particles.length);
-      const connected = this.getConnected();
-      if (connected.length === 0) { this.active = false; return; }
-      this.tIdx = connected[Math.floor(Math.random() * connected.length)];
-      this.progress = 0;
-      this.speed = randRange(0.006, 0.014);
-      this.active = true;
+    getConnected(){
+      const src=this.particles[this.pIdx];
+      return this.particles.map((p,i)=>{
+        if(i===this.pIdx) return -1;
+        return Math.hypot(p.x-src.x,p.y-src.y)<CONNECT?i:-1;
+      }).filter(i=>i>=0);
     }
-    getConnected() {
-      const src = this.particles[this.pIdx];
-      const result = [];
-      this.particles.forEach((p, i) => {
-        if (i === this.pIdx) return;
-        const dx = p.x - src.x, dy = p.y - src.y;
-        if (Math.sqrt(dx*dx+dy*dy) < CONNECT_DIST) result.push(i);
-      });
-      return result;
-    }
-    update() {
-      if (!this.active) { this.reset(); return; }
-      this.progress += this.speed;
-      if (this.progress >= 1) {
-        this.pIdx = this.tIdx;
-        const connected = this.getConnected();
-        if (connected.length === 0) { this.active = false; return; }
-        this.tIdx = connected[Math.floor(Math.random() * connected.length)];
-        this.progress = 0;
+    update(){
+      if(!this.active){this.reset();return;}
+      this.progress+=this.speed;
+      if(this.progress>=1){
+        this.pIdx=this.tIdx;
+        const con=this.getConnected();
+        if(!con.length){this.active=false;return;}
+        this.tIdx=con[Math.floor(Math.random()*con.length)];
+        this.progress=0;
       }
     }
-    draw() {
-      if (!this.active) return;
-      const src = this.particles[this.pIdx];
-      const dst = this.particles[this.tIdx];
-      const x = lerp(src.x, dst.x, this.progress);
-      const y = lerp(src.y, dst.y, this.progress);
-      ctx.beginPath();
-      ctx.arc(x, y, 2.5, 0, Math.PI*2);
-      ctx.fillStyle = '#00D4FF';
-      ctx.shadowBlur = 16; ctx.shadowColor = '#00D4FF';
-      ctx.fill();
-      ctx.shadowBlur = 0;
+    draw(){
+      if(!this.active) return;
+      const src=this.particles[this.pIdx], dst=this.particles[this.tIdx];
+      const x=lerp(src.x,dst.x,this.progress), y=lerp(src.y,dst.y,this.progress);
+      ctx.beginPath(); ctx.arc(x,y,2.5,0,Math.PI*2);
+      ctx.fillStyle='#00D4FF'; ctx.shadowBlur=18; ctx.shadowColor='#00D4FF';
+      ctx.fill(); ctx.shadowBlur=0;
     }
   }
 
-  const particles = Array.from({ length: PARTICLE_COUNT }, () => new Particle());
-  const packets = Array.from({ length: 5 }, () => new DataPacket(particles));
+  const particles = Array.from({length:COUNT},()=>new Particle());
+  const packets   = Array.from({length:8},()=>new DataPacket(particles));
 
-  function drawConnections() {
-    for (let i = 0; i < particles.length; i++) {
-      for (let j = i + 1; j < particles.length; j++) {
-        const dx = particles[i].x - particles[j].x;
-        const dy = particles[i].y - particles[j].y;
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        if (dist < CONNECT_DIST) {
-          const alpha = (1 - dist / CONNECT_DIST) * 0.18;
+  const loop = ()=>{
+    ctx.clearRect(0,0,W,H);
+    // connections
+    for(let i=0;i<particles.length;i++){
+      for(let j=i+1;j<particles.length;j++){
+        const dx=particles[i].x-particles[j].x, dy=particles[i].y-particles[j].y;
+        const d=Math.hypot(dx,dy);
+        if(d<CONNECT){
+          const a=(1-d/CONNECT)*0.35;
           ctx.beginPath();
-          ctx.moveTo(particles[i].x, particles[i].y);
-          ctx.lineTo(particles[j].x, particles[j].y);
-          ctx.strokeStyle = `rgba(0,212,255,${alpha})`;
-          ctx.lineWidth = 0.6;
-          ctx.stroke();
+          ctx.moveTo(particles[i].x,particles[i].y);
+          ctx.lineTo(particles[j].x,particles[j].y);
+          ctx.strokeStyle=`rgba(0,212,255,${a})`;
+          ctx.lineWidth=0.5; ctx.stroke();
         }
       }
     }
-  }
-
-  function animate() {
-    ctx.clearRect(0, 0, W, H);
-    particles.forEach(p => { p.update(); p.draw(); });
-    drawConnections();
-    packets.forEach(pk => { pk.update(); pk.draw(); });
-    requestAnimationFrame(animate);
-  }
-  animate();
+    particles.forEach(p=>{p.update();p.draw();});
+    packets.forEach(pk=>{pk.update();pk.draw();});
+    requestAnimationFrame(loop);
+  };
+  loop();
 }
 
 /* ════════════════════════════════════════════════════════
-   ONYX ENTITY VISUAL
+   ONYX ENTITY VISUAL (concentric rings)
 ════════════════════════════════════════════════════════ */
 function initOnyxEntity() {
   const canvas = document.getElementById('onyx-canvas');
-  if (!canvas) return;
+  if(!canvas) return;
   const ctx = canvas.getContext('2d');
-  canvas.width = 400; canvas.height = 400;
-  const cx = 200, cy = 200;
-  let t = 0;
-
-  const rings = [
-    { r: 140, speed: 0.004, dir: 1, color: '#00D4FF', dots: 3 },
-    { r: 105, speed: 0.007, dir: -1, color: '#6B2FD4', dots: 4 },
-    { r: 72, speed: 0.012, dir: 1, color: '#00D4FF', dots: 2 },
-    { r: 45, speed: 0.018, dir: -1, color: '#C9A96E', dots: 3 },
+  let S = canvas.width = canvas.height = Math.min(360, innerWidth*0.4);
+  const cx=S/2, cy=S/2;
+  let t=0;
+  const rings=[
+    {r:S*0.35, speed:0.003, dots:6, color:'#00D4FF', lineW:1.5},
+    {r:S*0.26, speed:-0.005, dots:4, color:'#6B2FD4', lineW:1},
+    {r:S*0.16, speed:0.008, dots:3, color:'#00D4FF', lineW:0.8},
+    {r:S*0.10, speed:-0.012, dots:2, color:'#C9A96E', lineW:0.6},
   ];
-
-  function drawEntity() {
-    ctx.clearRect(0, 0, 400, 400);
-    t += 1;
-
-    // Outer glow
-    const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, 160);
-    grd.addColorStop(0, 'rgba(107,47,212,0.12)');
-    grd.addColorStop(0.5, 'rgba(0,212,255,0.04)');
-    grd.addColorStop(1, 'transparent');
-    ctx.fillStyle = grd;
-    ctx.fillRect(0, 0, 400, 400);
-
+  const draw=()=>{
+    ctx.clearRect(0,0,S,S);
     // Core pulse
-    const pulse = 16 + Math.sin(t * 0.04) * 4;
-    ctx.beginPath();
-    ctx.arc(cx, cy, pulse, 0, Math.PI*2);
-    const coreGrd = ctx.createRadialGradient(cx, cy, 0, cx, cy, pulse);
-    coreGrd.addColorStop(0, 'rgba(255,255,255,0.9)');
-    coreGrd.addColorStop(0.3, 'rgba(0,212,255,0.8)');
-    coreGrd.addColorStop(1, 'transparent');
-    ctx.fillStyle = coreGrd;
-    ctx.shadowBlur = 40; ctx.shadowColor = '#00D4FF';
-    ctx.fill(); ctx.shadowBlur = 0;
-
-    // Rings + orbiting dots
-    rings.forEach(ring => {
-      const angle = (t * ring.speed * ring.dir);
-
-      // Ring
+    const pulse=0.85+Math.sin(t*2)*0.15;
+    const g=ctx.createRadialGradient(cx,cy,0,cx,cy,S*0.07*pulse);
+    g.addColorStop(0,'rgba(0,212,255,0.95)');
+    g.addColorStop(0.5,'rgba(0,212,255,0.4)');
+    g.addColorStop(1,'rgba(0,212,255,0)');
+    ctx.beginPath(); ctx.arc(cx,cy,S*0.07*pulse,0,Math.PI*2);
+    ctx.fillStyle=g; ctx.fill();
+    ctx.shadowBlur=40; ctx.shadowColor='#00D4FF';
+    ctx.beginPath(); ctx.arc(cx,cy,S*0.04,0,Math.PI*2);
+    ctx.fillStyle='#fff'; ctx.fill(); ctx.shadowBlur=0;
+    // Rings
+    rings.forEach((ring,ri)=>{
+      const angle=t*ring.speed*100;
       ctx.beginPath();
-      ctx.arc(cx, cy, ring.r, 0, Math.PI*2);
-      ctx.strokeStyle = ring.color + '30';
-      ctx.lineWidth = 1;
-      ctx.shadowBlur = 8; ctx.shadowColor = ring.color;
-      ctx.stroke(); ctx.shadowBlur = 0;
-
+      ctx.arc(cx,cy,ring.r,0,Math.PI*2);
+      ctx.strokeStyle=ring.color; ctx.lineWidth=ring.lineW;
+      ctx.globalAlpha=0.4; ctx.stroke(); ctx.globalAlpha=1;
       // Orbiting dots
-      for (let i = 0; i < ring.dots; i++) {
-        const a = angle + (i / ring.dots) * Math.PI * 2;
-        const dx = cx + Math.cos(a) * ring.r;
-        const dy = cy + Math.sin(a) * ring.r;
-        ctx.beginPath();
-        ctx.arc(dx, dy, 3.5, 0, Math.PI*2);
-        ctx.fillStyle = ring.color;
-        ctx.shadowBlur = 14; ctx.shadowColor = ring.color;
-        ctx.fill(); ctx.shadowBlur = 0;
+      for(let d=0;d<ring.dots;d++){
+        const a=angle+(d/ring.dots)*Math.PI*2;
+        const dx=cx+Math.cos(a)*ring.r, dy=cy+Math.sin(a)*ring.r;
+        ctx.beginPath(); ctx.arc(dx,dy,2.5,0,Math.PI*2);
+        ctx.fillStyle=ring.color; ctx.shadowBlur=12; ctx.shadowColor=ring.color;
+        ctx.fill(); ctx.shadowBlur=0;
       }
     });
-
-    // Scanning arcs
-    const arcAngle = (t * 0.02) % (Math.PI * 2);
-    ctx.beginPath();
-    ctx.arc(cx, cy, 120, arcAngle, arcAngle + 0.8);
-    ctx.strokeStyle = 'rgba(0,212,255,0.5)';
-    ctx.lineWidth = 1.5;
-    ctx.shadowBlur = 12; ctx.shadowColor = '#00D4FF';
-    ctx.stroke(); ctx.shadowBlur = 0;
-
-    requestAnimationFrame(drawEntity);
-  }
-  drawEntity();
+    t+=0.016;
+    requestAnimationFrame(draw);
+  };
+  draw();
 }
 
 /* ════════════════════════════════════════════════════════
-   ENTRY SCREEN
+   ENTRY EXPERIENCE
 ════════════════════════════════════════════════════════ */
 function initEntry() {
-  const entryScreen = document.getElementById('entry-screen');
-  const bootLines = document.getElementById('boot-lines');
+  const bootEl   = document.getElementById('boot-lines');
   const wordmark = document.getElementById('entry-wordmark');
-  const btnWrap = document.getElementById('entry-btn-wrap');
+  const btnWrap  = document.getElementById('entry-btn-wrap');
   const entryBtn = document.getElementById('entry-btn');
-  const entrySpeech = document.getElementById('entry-speech');
-  const glitchOverlay = document.getElementById('glitch-overlay');
-  const cinematicBars = document.getElementById('cinematic-bars');
-  const mainSite = document.getElementById('main-site');
+  const speech   = document.getElementById('entry-speech');
+  const entryScr = document.getElementById('entry-screen');
 
-  // Entry particle canvas (minimal)
-  initParticles('particle-canvas-entry', { count: 50, connectDist: 100, repelForce: 2, speed: 0.3 });
+  initParticles('particle-canvas-entry',{count:60,connectDist:100,speed:0.3});
 
-  const lines = [
+  const LINES = [
     'WYVN INTELLIGENCE SYSTEM',
-    'VERSION 2.0.1 — EYES ONLY',
+    'VERSION 3.0.0 — EYES ONLY',
     '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
     '[████████████████] LOADING CORES',
     '[████████████████] ONYX AI LAYER',
     '[████████████████] NEURAL NETWORK',
     '[████████████████] VOICE SYNTHESIS',
+    '[████████████████] BEHAVIORAL ENGINE',
     '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
     'SCANNING VISITOR...',
-    'IDENTITY: UNCLASSIFIED',
+    isReturnVisitor ? 'IDENTITY: RETURNING SUBJECT — CLASSIFIED' : 'IDENTITY: UNCLASSIFIED',
     'HUMAN VERIFICATION REQUIRED.',
   ];
 
-  const quips = [
-    'Nope.', 'Nice try.', 'SO close.', 'Here buddy~',
-    'Almost!!', 'You thought?', 'I can do this forever.',
-  ];
-
-  let escapeCount = 0;
-  let quipIdx = 0;
-  let btnX = 0, btnY = 0;
-  let targetX = 0, targetY = 0;
-  let btnCaught = false;
-  let btnRAF;
-
-  // Typewriter
-  function typeLine(text, el, speed, cb) {
-    let i = 0;
-    function tick() {
-      el.textContent += text[i] || '';
-      i++;
-      if (i <= text.length) setTimeout(tick, speed);
-      else if (cb) setTimeout(cb, 180);
-    }
-    tick();
-  }
-
-  function showLines(idx) {
-    if (idx >= lines.length) {
-      // Show wordmark
-      setTimeout(() => {
+  let lineIdx=0;
+  const typeLine=()=>{
+    if(lineIdx>=LINES.length){
+      setTimeout(()=>{
         wordmark.classList.remove('hidden');
-        setTimeout(() => {
-          btnWrap.classList.remove('hidden');
-          initButtonEscape();
-        }, 1200);
-      }, 600);
+        setTimeout(()=>{ btnWrap.classList.remove('hidden'); },600);
+      },400);
       return;
     }
-    const div = document.createElement('div');
-    bootLines.appendChild(div);
-    typeLine(lines[idx], div, idx < 3 ? 32 : 18, () => showLines(idx + 1));
-    bootLines.parentElement.scrollTop = bootLines.parentElement.scrollHeight;
-  }
+    const div=document.createElement('div');
+    div.textContent=LINES[lineIdx++];
+    bootEl.appendChild(div);
+    bootEl.scrollTop=bootEl.scrollHeight;
+    setTimeout(typeLine, lineIdx<9?220:380);
+  };
+  setTimeout(typeLine,600);
 
-  setTimeout(() => showLines(0), 400);
+  // Running button logic
+  const QUIPS = ['Nope.','Nice try.','SO close.','Here buddy~','Almost!!','You thought?','I can do this forever.','Seriously?','...impressive persistence.','Any day now.'];
+  let escapes=0, caught=false;
+  let btnX=0, btnY=0, velX=0, velY=0;
 
-  // Button escape physics
-  function initButtonEscape() {
-    const rect = entryBtn.getBoundingClientRect();
-    btnX = window.innerWidth / 2;
-    btnY = window.innerHeight / 2 + 80;
-    targetX = btnX; targetY = btnY;
+  const getCenter=()=>{
+    const r=entryBtn.getBoundingClientRect();
+    return {x:r.left+r.width/2, y:r.top+r.height/2};
+  };
 
-    entryBtn.style.position = 'fixed';
-    entryBtn.style.left = btnX + 'px';
-    entryBtn.style.top = btnY + 'px';
-    entryBtn.style.transform = 'translate(-50%,-50%)';
-    btnWrap.style.position = 'fixed';
-    btnWrap.style.inset = '0';
-    btnWrap.style.pointerEvents = 'none';
-    entryBtn.style.pointerEvents = 'auto';
+  const spring=()=>{
+    velX+=(0-btnX)*0.08; velY+=(0-btnY)*0.08;
+    velX*=0.82; velY*=0.82;
+    btnX+=velX; btnY+=velY;
+    entryBtn.style.transform=`translate(${btnX}px,${btnY}px)`;
+    requestAnimationFrame(spring);
+  };
+  spring();
 
-    let mx = -9999, my = -9999;
-    document.addEventListener('mousemove', (e) => {
-      mx = e.clientX; my = e.clientY;
-    });
-
-    function btnLoop() {
-      if (btnCaught) return;
-
-      // Animate toward target
-      btnX = lerp(btnX, targetX, 0.12);
-      btnY = lerp(btnY, targetY, 0.12);
-      entryBtn.style.left = btnX + 'px';
-      entryBtn.style.top = btnY + 'px';
-
-      // Check proximity to mouse
-      const dx = mx - btnX;
-      const dy = my - btnY;
-      const dist = Math.sqrt(dx*dx + dy*dy);
-
-      if (dist < 80 && escapeCount < 6) {
-        // Run away
-        const angle = Math.atan2(dy, dx) + Math.PI;
-        const runDist = 220;
-        let nx = btnX + Math.cos(angle) * runDist;
-        let ny = btnY + Math.sin(angle) * runDist;
-        nx = clamp(nx, 80, window.innerWidth - 80);
-        ny = clamp(ny, 80, window.innerHeight - 80);
-        targetX = nx; targetY = ny;
-        escapeCount++;
-
-        // Show quip
-        entrySpeech.textContent = escapeCount >= 6 ? '...okay fine.' : quips[Math.min(quipIdx++, quips.length - 1)];
-        entrySpeech.classList.remove('hidden');
-        clearTimeout(entrySpeech._timeout);
-        entrySpeech._timeout = setTimeout(() => {
-          if (escapeCount < 6) entrySpeech.classList.add('hidden');
-        }, 1400);
-
-        // After 6 escapes — stop running
-        if (escapeCount >= 6) {
-          btnCaught = true;
-          entryBtn.style.transition = 'left 0.8s cubic-bezier(0.34,1.56,0.64,1), top 0.8s cubic-bezier(0.34,1.56,0.64,1)';
-          targetX = window.innerWidth / 2;
-          targetY = window.innerHeight / 2 + 80;
-          btnX = targetX; btnY = targetY;
-          entryBtn.style.left = btnX + 'px';
-          entryBtn.style.top = btnY + 'px';
-          return;
-        }
+  document.addEventListener('mousemove',e=>{
+    if(caught) return;
+    const c=getCenter();
+    const dx=e.clientX-c.x, dy=e.clientY-c.y;
+    const dist=Math.hypot(dx,dy);
+    if(dist<120){
+      const force=(120-dist)/120;
+      const angle=Math.atan2(dy,dx);
+      const pushX=-Math.cos(angle)*160*force;
+      const pushY=-Math.sin(angle)*160*force;
+      const maxX=innerWidth*0.3, maxY=innerHeight*0.25;
+      btnX=clamp(btnX+pushX,-maxX,maxX);
+      btnY=clamp(btnY+pushY,-maxY,maxY);
+      escapes++;
+      if(escapes>2 && escapes<=10){
+        speech.textContent=QUIPS[Math.min(escapes-3,QUIPS.length-1)];
+        speech.classList.remove('hidden');
       }
-
-      btnRAF = requestAnimationFrame(btnLoop);
+      if(escapes>=5){
+        setTimeout(()=>{
+          speech.textContent='...okay fine.';
+          caught=true;
+          velX=0; velY=0; btnX=0; btnY=0;
+        },800);
+      }
     }
-    btnRAF = requestAnimationFrame(btnLoop);
-  }
+  });
 
-  // Entry button click
-  entryBtn.addEventListener('click', enterSite);
+  entryBtn.addEventListener('click',()=>{ triggerEntry(); });
 
-  function enterSite() {
+  async function triggerEntry(){
     // Glitch
-    glitchOverlay.classList.add('active');
-    setTimeout(() => {
-      glitchOverlay.classList.remove('active');
-    }, 520);
-
-    // Cinematic bars
-    setTimeout(() => {
-      cinematicBars.classList.add('active');
-      setTimeout(() => {
-        // Reveal main site
-        entryScreen.style.transition = 'opacity 0.4s';
-        entryScreen.style.opacity = '0';
-        mainSite.classList.remove('hidden');
-        setTimeout(() => {
-          entryScreen.remove();
-          cinematicBars.classList.remove('active');
-          // Init main site systems
-          initMainSite();
-        }, 500);
-      }, 700);
-    }, 300);
-
-    // Play voice
-    playOnyxVoice('I\'ve been expecting you.');
+    const glitch=document.getElementById('glitch-overlay');
+    const bars=document.getElementById('cinematic-bars');
+    glitch.classList.add('active');
+    bars.classList.add('active');
+    // Play ONYX voice
+    speakOnyx("I've been expecting you.");
+    await delay(600);
+    glitch.classList.remove('active');
+    bars.classList.add('sweep');
+    await delay(500);
+    entryScr.style.opacity='0';
+    entryScr.style.transition='opacity 0.4s';
+    await delay(400);
+    entryScr.style.display='none';
+    document.getElementById('main-site').classList.remove('hidden');
+    bars.classList.remove('active','sweep');
+    // Init main site
+    initMainSite();
+    // Ping visitor
+    pingVisitor();
   }
 }
+
+const delay = ms => new Promise(r=>setTimeout(r,ms));
 
 /* ════════════════════════════════════════════════════════
    MAIN SITE INIT
 ════════════════════════════════════════════════════════ */
 function initMainSite() {
-  initCursor();
   initParticles('particle-canvas');
   initOnyxEntity();
-  initNavbar();
   initReveal();
+  initNav();
   initMagnetic();
-  initStatCounters();
-  initChat();
+  initStats();
+  initOnyxChat();
   initAudit();
   initContact();
   initFloatingPanel();
-  initModals();
-  initMobileNav();
-  setTimeout(() => {
-    document.getElementById('onyx-float').classList.remove('hidden');
-  }, 3000);
+  initSocialProof();
+  initActiveVisitors();
+  initScrollTracking();
+  startTimeTracking();
+
+  // If return visitor, ONYX greets them
+  if(isReturnVisitor){
+    setTimeout(()=>{
+      const greeting=visitCount===2
+        ? "Back again. I knew you would be. Let's stop circling and actually talk."
+        : `Visit number ${visitCount}. ONYX doesn't forget. Ready to move?`;
+      appendMessage('ONYX', greeting);
+      if(voiceEnabled) speakOnyx(greeting);
+    }, 3000);
+  }
 }
 
 /* ════════════════════════════════════════════════════════
    NAVBAR
 ════════════════════════════════════════════════════════ */
-function initNavbar() {
-  const nav = document.getElementById('navbar');
-  window.addEventListener('scroll', () => {
-    nav.classList.toggle('scrolled', window.scrollY > 60);
+function initNav() {
+  const nav=document.getElementById('navbar');
+  const ham=document.getElementById('hamburger');
+  const mob=document.getElementById('mobile-nav');
+  addEventListener('scroll',()=>{
+    nav.classList.toggle('scrolled',scrollY>50);
   });
-}
-
-/* ════════════════════════════════════════════════════════
-   MOBILE NAV
-════════════════════════════════════════════════════════ */
-function initMobileNav() {
-  const ham = document.getElementById('hamburger');
-  const nav = document.getElementById('mobile-nav');
-  ham.addEventListener('click', () => {
+  ham?.addEventListener('click',()=>{
     ham.classList.toggle('open');
-    nav.classList.toggle('open');
-    document.body.style.overflow = nav.classList.contains('open') ? 'hidden' : '';
+    mob.classList.toggle('open');
   });
-  document.querySelectorAll('.mob-link').forEach(a => {
-    a.addEventListener('click', () => {
-      ham.classList.remove('open');
-      nav.classList.remove('open');
-      document.body.style.overflow = '';
-    });
-  });
-}
-
-/* ════════════════════════════════════════════════════════
-   SCROLL REVEAL (line reveals + text reveals)
-════════════════════════════════════════════════════════ */
-function initReveal() {
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry, idx) => {
-      if (entry.isIntersecting) {
-        const el = entry.target;
-        if (el.classList.contains('reveal-text')) {
-          setTimeout(() => el.classList.add('visible'), 100);
-        }
-        if (el.classList.contains('section-headline') || el.classList.contains('hero-headline')) {
-          const lines = el.querySelectorAll('.reveal-line');
-          lines.forEach((line, i) => {
-            setTimeout(() => line.classList.add('revealed'), 80 + i * 120);
-          });
-        }
-        observer.unobserve(el);
-      }
-    });
-  }, { threshold: 0.15 });
-
-  document.querySelectorAll('.reveal-text, .section-headline, .hero-headline').forEach(el => {
-    observer.observe(el);
-  });
+  mob?.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{
+    ham.classList.remove('open'); mob.classList.remove('open');
+  }));
 }
 
 /* ════════════════════════════════════════════════════════
    MAGNETIC BUTTONS
 ════════════════════════════════════════════════════════ */
 function initMagnetic() {
-  document.querySelectorAll('.magnetic').forEach(el => {
-    el.addEventListener('mousemove', (e) => {
-      const rect = el.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      const dx = e.clientX - cx;
-      const dy = e.clientY - cy;
-      const dist = Math.sqrt(dx*dx + dy*dy);
-      const range = 90;
-      if (dist < range) {
-        const force = (range - dist) / range;
-        el.style.transform = `translate(${dx * force * 0.38}px, ${dy * force * 0.38}px)`;
+  document.querySelectorAll('.magnetic').forEach(el=>{
+    let bx=0,by=0,vx=0,vy=0;
+    const spring=()=>{
+      vx+=(0-bx)*0.12; vy+=(0-by)*0.12;
+      vx*=0.75; vy*=0.75;
+      bx+=vx; by+=vy;
+      el.style.transform=`translate(${bx}px,${by}px)`;
+      requestAnimationFrame(spring);
+    };
+    spring();
+    el.addEventListener('mousemove',e=>{
+      const r=el.getBoundingClientRect();
+      const cx=r.left+r.width/2, cy=r.top+r.height/2;
+      const dx=e.clientX-cx, dy=e.clientY-cy;
+      const dist=Math.hypot(dx,dy);
+      if(dist<100){ bx+=dx*0.35; by+=dy*0.35; }
+    });
+    el.addEventListener('mouseleave',()=>{ bx=0;by=0; });
+  });
+}
+
+/* ════════════════════════════════════════════════════════
+   LINE REVEAL ANIMATIONS
+════════════════════════════════════════════════════════ */
+function initReveal() {
+  const observer=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        e.target.classList.add('revealed');
+        // Track section visits
+        const section=e.target.closest('section');
+        if(section && !sectionsVisited.includes(section.id)){
+          sectionsVisited.push(section.id);
+        }
+        observer.unobserve(e.target);
       }
     });
-    el.addEventListener('mouseleave', () => {
-      el.style.transition = 'transform 0.5s cubic-bezier(0.34,1.56,0.64,1)';
-      el.style.transform = '';
-      setTimeout(() => { el.style.transition = ''; }, 500);
-    });
-  });
+  },{threshold:0.15,rootMargin:'0px 0px -60px 0px'});
+  document.querySelectorAll('.reveal-line, .reveal-text').forEach(el=>observer.observe(el));
 }
 
 /* ════════════════════════════════════════════════════════
-   STAT COUNTERS
+   ANIMATED STATS
 ════════════════════════════════════════════════════════ */
-function initStatCounters() {
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (!entry.isIntersecting) return;
-      const el = entry.target;
-      const target = parseInt(el.dataset.target || '0');
-      const suffix = el.dataset.suffix || '';
-      if (el.dataset.suffix === '∞') { el.textContent = '∞'; observer.unobserve(el); return; }
-      let start = 0;
-      const step = target / 60;
-      const tick = () => {
-        start = Math.min(start + step, target);
-        el.textContent = Math.floor(start) + suffix;
-        if (start < target) requestAnimationFrame(tick);
+function initStats() {
+  const items=document.querySelectorAll('.stat-number');
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(!e.isIntersecting) return;
+      const el=e.target;
+      const target=parseFloat(el.dataset.target);
+      const suffix=el.dataset.suffix||'';
+      const decimals=el.dataset.decimals||0;
+      let current=0; const step=target/80;
+      const tick=()=>{
+        current=Math.min(current+step,target);
+        el.textContent=current.toFixed(decimals)+suffix;
+        if(current<target) requestAnimationFrame(tick);
       };
-      requestAnimationFrame(tick);
-      observer.unobserve(el);
+      tick();
+      obs.unobserve(el);
     });
-  }, { threshold: 0.5 });
-
-  document.querySelectorAll('.stat-number[data-target]').forEach(el => observer.observe(el));
+  },{threshold:0.5});
+  items.forEach(el=>obs.observe(el));
 }
 
 /* ════════════════════════════════════════════════════════
-   ONYX CHAT (Anthropic via backend)
+   ONYX CHAT
 ════════════════════════════════════════════════════════ */
-let chatHistory = [];
-let voiceEnabled = false;
-
-function initChat() {
-  const input = document.getElementById('chat-input');
+function initOnyxChat() {
+  const input   = document.getElementById('chat-input');
   const sendBtn = document.getElementById('chat-send');
-  const voiceBtn = document.getElementById('voice-toggle');
+  const voiceBtn= document.getElementById('voice-toggle');
 
-  sendBtn.addEventListener('click', () => sendMessage(input.value));
-  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMessage(input.value); });
-
-  voiceBtn.addEventListener('click', () => {
-    voiceEnabled = !voiceEnabled;
-    voiceBtn.classList.toggle('active', voiceEnabled);
-    voiceBtn.textContent = voiceEnabled ? '🔇' : '🔊';
+  voiceBtn?.addEventListener('click',()=>{
+    voiceEnabled=!voiceEnabled;
+    voiceBtn.textContent=voiceEnabled?'🔊':'🔈';
+    voiceBtn.style.color=voiceEnabled?'var(--cyan)':'var(--muted)';
   });
-}
 
-async function sendMessage(text, targetPanel = 'main') {
-  text = text.trim();
-  if (!text) return;
-
-  const panel = targetPanel === 'float' ? {
-    messages: document.getElementById('float-input'),
-    display: null,
-    input: document.getElementById('float-input'),
-  } : {
-    messages: document.getElementById('chat-messages'),
-    input: document.getElementById('chat-input'),
+  const send = async ()=>{
+    const msg=input.value.trim();
+    if(!msg) return;
+    input.value='';
+    appendMessage('YOU',msg);
+    chatHistory.push({role:'user',content:msg});
+    const typingEl=appendTyping();
+    try{
+      const res=await fetch(CONFIG.BACKEND+'/api/onyx-chat',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          messages:chatHistory,
+          visitor_id:sessionId,
+          audit_score:auditScore,
+          time_on_page:timeOnPage,
+          sections_visited:sectionsVisited,
+          return_visitor:isReturnVisitor
+        })
+      });
+      const data=await res.json();
+      typingEl.remove();
+      const reply=data.reply||'...';
+      appendMessage('ONYX',reply);
+      chatHistory.push({role:'assistant',content:reply});
+      if(voiceEnabled) speakOnyx(reply);
+      // Capture email if they gave one
+      extractEmailFromMessage(msg);
+    }catch{
+      typingEl.remove();
+      appendMessage('ONYX','[SIGNAL DISRUPTED] Reconnecting...');
+    }
   };
 
-  const messagesEl = document.getElementById(targetPanel === 'float' ? 'chat-messages' : 'chat-messages');
-  const inputEl = document.getElementById(targetPanel === 'float' ? 'float-input' : 'chat-input');
-  inputEl.value = '';
-
-  // Add user message
-  appendMessage(messagesEl, text, 'user');
-  chatHistory.push({ role: 'user', content: text });
-
-  // Typing indicator
-  const typingEl = appendTyping(messagesEl);
-
-  try {
-    const reply = await callOnyx(text);
-    typingEl.remove();
-    appendMessage(messagesEl, reply, 'onyx');
-    chatHistory.push({ role: 'assistant', content: reply });
-    if (voiceEnabled) playOnyxVoice(reply);
-  } catch (err) {
-    typingEl.remove();
-    const fallback = getFallbackResponse(text);
-    appendMessage(messagesEl, fallback, 'onyx');
-  }
+  sendBtn?.addEventListener('click',send);
+  input?.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();} });
 }
 
-function appendMessage(container, text, role) {
-  const div = document.createElement('div');
-  div.className = `chat-msg ${role === 'onyx' ? 'onyx-msg' : 'user-msg'}`;
-  div.innerHTML = `<span class="msg-label">${role === 'onyx' ? 'ONYX' : 'YOU'}</span><p>${text}</p>`;
-  container.appendChild(div);
-  container.scrollTop = container.scrollHeight;
+function appendMessage(sender, text) {
+  const wrap=document.getElementById('chat-messages');
+  if(!wrap) return;
+  const div=document.createElement('div');
+  div.className='chat-msg '+(sender==='ONYX'?'onyx-msg':'user-msg');
+  div.innerHTML=`<span class="msg-label">${sender}</span><p></p>`;
+  wrap.appendChild(div);
+  wrap.scrollTop=wrap.scrollHeight;
+  // Typewriter for ONYX
+  if(sender==='ONYX'){
+    const p=div.querySelector('p');
+    let i=0;
+    const type=()=>{
+      if(i<text.length){p.textContent+=text[i++];requestAnimationFrame(type);}
+      wrap.scrollTop=wrap.scrollHeight;
+    };
+    type();
+  } else {
+    div.querySelector('p').textContent=text;
+  }
   return div;
 }
 
-function appendTyping(container) {
-  const div = document.createElement('div');
-  div.className = 'chat-msg onyx-msg';
-  div.innerHTML = `<span class="msg-label">ONYX</span><div class="chat-typing"><span></span><span></span><span></span></div>`;
-  container.appendChild(div);
-  container.scrollTop = container.scrollHeight;
+function appendTyping() {
+  const wrap=document.getElementById('chat-messages');
+  const div=document.createElement('div');
+  div.className='chat-msg onyx-msg typing-indicator';
+  div.innerHTML='<span class="msg-label">ONYX</span><p><span class="dot"></span><span class="dot"></span><span class="dot"></span></p>';
+  wrap.appendChild(div);
+  wrap.scrollTop=wrap.scrollHeight;
   return div;
 }
 
-async function callOnyx(userMessage) {
-  // Try backend proxy first, then fallback
-  try {
-    const res = await fetch(CONFIG.ANTHROPIC_PROXY, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system: ONYX_SYSTEM_PROMPT,
-        messages: [...chatHistory.slice(-10), { role: 'user', content: userMessage }],
-        max_tokens: 180,
-      }),
-    });
-    if (!res.ok) throw new Error('Proxy error');
-    const data = await res.json();
-    return data.content || data.reply || data.message || getFallbackResponse(userMessage);
-  } catch {
-    return getFallbackResponse(userMessage);
+function extractEmailFromMessage(msg) {
+  const emailRe=/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+  const match=msg.match(emailRe);
+  if(match && !sessionStorage.getItem('wyvn_captured_email')){
+    sessionStorage.setItem('wyvn_captured_email', match[0]);
+    // Auto-capture as partial lead
+    fetch(CONFIG.BACKEND+'/api/capture-lead',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email:match[0], source:'onyx_chat', visitor_id:sessionId, goal:'ONYX Chat conversation'})
+    }).catch(()=>{});
   }
-}
-
-function getFallbackResponse(msg) {
-  const lower = msg.toLowerCase();
-  if (lower.includes('price') || lower.includes('cost') || lower.includes('much')) {
-    return "Growth at $3,500 is where most clients land — full brand identity + ONYX wired in. Payment plans are available. Want me to break down what's included?";
-  }
-  if (lower.includes('time') || lower.includes('long') || lower.includes('fast')) {
-    return "First draft in 48 hours. Full delivery in 2-3 weeks depending on scope and how fast you get feedback. We move fast on purpose.";
-  }
-  if (lower.includes('template') || lower.includes('squarespace') || lower.includes('wix')) {
-    return "Zero templates. Ever. If you want a website that looks like every other website, Squarespace exists. If you want something that stops people mid-scroll — that's WYVN.";
-  }
-  if (lower.includes('portfolio') || lower.includes('example') || lower.includes('work')) {
-    return "Our portfolio's being refreshed. But here's what's actually more useful — drop your URL and I'll audit your current site. That tells you more about what we'd build than any portfolio.";
-  }
-  if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey')) {
-    return "I've been watching this visit. You didn't end up here by accident. What's actually going on with your website?";
-  }
-  if (lower.includes('who') || lower.includes('what are you')) {
-    return "I'm ONYX — WYVN's intelligence layer. I'm not a chatbot. I'm the reason clients choose WYVN over every other agency. What's your website URL?";
-  }
-  if (lower.includes('human') || lower.includes('person') || lower.includes('talk')) {
-    return "Drop your email and someone from WYVN reaches out within 2 hours. But real talk — I can answer almost anything right now, and I'm faster. What do you need to know?";
-  }
-  const defaults = [
-    "Interesting. What's your website URL — I'll audit it and give you something actually useful.",
-    "I'm processing that. What specifically is going wrong with your current website?",
-    "Let me be direct: what's the actual problem you're trying to solve?",
-    "The fastest way to see if WYVN makes sense for you is a 15-minute call. Want to grab a slot?",
-  ];
-  return defaults[Math.floor(Math.random() * defaults.length)];
 }
 
 /* ════════════════════════════════════════════════════════
-   ELEVENLABS VOICE
+   VOICE SYNTHESIS
 ════════════════════════════════════════════════════════ */
-async function playOnyxVoice(text) {
-  if (!text) return;
-  try {
-    const res = await fetch(CONFIG.ELEVENLABS_PROXY, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: text.slice(0, 200), voice_id: CONFIG.ELEVENLABS_VOICE_ID }),
+async function speakOnyx(text) {
+  try{
+    const res=await fetch(CONFIG.BACKEND+'/api/onyx-voice',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({text:text.slice(0,300)})
     });
-    if (!res.ok) return;
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const audio = new Audio(url);
-    audio.play().catch(() => {});
-    audio.onended = () => URL.revokeObjectURL(url);
-  } catch { /* Voice optional */ }
+    if(!res.ok) return;
+    const blob=await res.blob();
+    const url=URL.createObjectURL(blob);
+    const audio=new Audio(url);
+    audio.play();
+    audio.onended=()=>URL.revokeObjectURL(url);
+  }catch(e){ console.log('voice err',e); }
 }
 
 /* ════════════════════════════════════════════════════════
-   SITE AUDIT (Google PageSpeed)
+   PAGESPEED AUDIT
 ════════════════════════════════════════════════════════ */
 function initAudit() {
-  const btn = document.getElementById('audit-btn');
-  const input = document.getElementById('audit-url');
-  const trigger = document.getElementById('audit-trigger');
-  const auditModal = document.getElementById('audit-modal');
-  const modalClose = document.getElementById('audit-modal-close');
-  const modalBtn = document.getElementById('audit-modal-btn');
-  const modalInput = document.getElementById('audit-modal-url');
+  const auditBtn=document.getElementById('audit-btn');
+  const auditInput=document.getElementById('audit-url');
+  const results=document.getElementById('audit-results');
+  const btnText=document.getElementById('audit-btn-text');
+  const heroTrigger=document.getElementById('audit-trigger');
 
-  if (btn) {
-    btn.addEventListener('click', () => {
-      runAudit(input?.value, 'audit-results', 'audit-btn-text');
-    });
-    input?.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') runAudit(input.value, 'audit-results', 'audit-btn-text');
-    });
-  }
-
-  if (trigger) {
-    trigger.addEventListener('click', () => {
-      auditModal?.classList.remove('hidden');
-    });
-  }
-
-  modalClose?.addEventListener('click', () => auditModal?.classList.add('hidden'));
-  auditModal?.addEventListener('click', (e) => { if (e.target === auditModal) auditModal.classList.add('hidden'); });
-
-  modalBtn?.addEventListener('click', () => {
-    runAudit(modalInput?.value, 'audit-modal-results', 'audit-modal-btn-text');
+  heroTrigger?.addEventListener('click',()=>{
+    document.getElementById('demo-section')?.scrollIntoView({behavior:'smooth'});
+    setTimeout(()=>auditInput?.focus(),600);
   });
-  modalInput?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') runAudit(modalInput.value, 'audit-modal-results', 'audit-modal-btn-text');
-  });
-}
 
-async function runAudit(url, resultsId, btnId) {
-  if (!url || !url.includes('.')) {
-    alert('Please enter a valid URL (e.g. https://yourwebsite.com)');
-    return;
-  }
-  if (!url.startsWith('http')) url = 'https://' + url;
+  auditBtn?.addEventListener('click',runAudit);
+  auditInput?.addEventListener('keydown',e=>{ if(e.key==='Enter') runAudit(); });
 
-  const resultsEl = document.getElementById(resultsId);
-  const btnEl = document.getElementById(btnId);
-
-  if (btnEl) btnEl.textContent = 'Running...';
-  if (resultsEl) {
-    resultsEl.classList.remove('hidden');
-    resultsEl.innerHTML = `
-      <div class="audit-loading">
-        <div>ONYX SCANNING: ${url}</div>
-        <div class="loading-bar"></div>
-      </div>`;
-  }
-
-  try {
-    const res = await fetch('https://wyvn-onyx-backend.onrender.com/api/audit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url }),
-    });
-    if (!res.ok) throw new Error('Audit API error');
-    const data = await res.json();
-    const scores = data.scores;
-    const getClass = (s) => s >= 90 ? 'good' : s >= 50 ? 'ok' : 'bad';
-    const avg = data.avg;
-    const insightMsg = data.onyxAssessment;
-
-    if (resultsEl) {
-      resultsEl.innerHTML = `
+  async function runAudit() {
+    let url=auditInput.value.trim();
+    if(!url){ auditInput.classList.add('shake'); setTimeout(()=>auditInput.classList.remove('shake'),500); return; }
+    if(!url.startsWith('http')) url='https://'+url;
+    btnText.textContent='ONYX Scanning...';
+    auditBtn.disabled=true;
+    results.innerHTML='<div class="audit-loading"><div class="audit-pulse"></div><p>ONYX is auditing your site...</p></div>';
+    results.classList.remove('hidden');
+    try{
+      const res=await fetch(CONFIG.BACKEND+'/api/audit',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({url})
+      });
+      const data=await res.json();
+      if(data.error) throw new Error(data.error);
+      const s=data.scores;
+      auditScore=s.performance;
+      const cls=v=>v>=90?'score-great':v>=70?'score-ok':'score-bad';
+      results.innerHTML=`
         <div class="audit-scores">
-          <div class="audit-score-card">
-            <div class="score-circle ${getClass(scores.performance)}">${scores.performance}</div>
-            <div class="score-label">Performance</div>
-          </div>
-          <div class="audit-score-card">
-            <div class="score-circle ${getClass(scores.accessibility)}">${scores.accessibility}</div>
-            <div class="score-label">Accessibility</div>
-          </div>
-          <div class="audit-score-card">
-            <div class="score-circle ${getClass(scores.bestPractices)}">${scores.bestPractices}</div>
-            <div class="score-label">Best Practices</div>
-          </div>
-          <div class="audit-score-card">
-            <div class="score-circle ${getClass(scores.seo)}">${scores.seo}</div>
-            <div class="score-label">SEO</div>
-          </div>
+          <div class="score-item"><div class="score-circle ${cls(s.performance)}">${s.performance}</div><div class="score-label">Performance</div></div>
+          <div class="score-item"><div class="score-circle ${cls(s.seo)}">${s.seo}</div><div class="score-label">SEO</div></div>
+          <div class="score-item"><div class="score-circle ${cls(s.accessibility)}">${s.accessibility}</div><div class="score-label">Accessibility</div></div>
+          <div class="score-item"><div class="score-circle ${cls(s.bestPractices)}">${s.bestPractices}</div><div class="score-label">Best Practices</div></div>
         </div>
-        <div class="audit-insights">
-          <h4>ONYX ASSESSMENT</h4>
-          <p>${insightMsg}</p>
-          <div class="audit-cta-row">
-            <a href="#contact-section" class="btn-primary magnetic">
-              <span>Fix This With WYVN</span>
-              <div class="btn-glow"></div>
-            </a>
+        <div class="audit-verdict">
+          <p class="audit-onyx-line">${getAuditVerdict(s.performance)}</p>
+          <div class="audit-ctas">
+            <a href="#contact-section" class="btn-primary magnetic"><span>Fix This — Talk to WYVN</span><div class="btn-glow"></div></a>
             <a href="#contact-section" class="btn-ghost">Get Full Report</a>
           </div>
         </div>`;
-    }
-
-    // Push audit data into ONYX chat context
-    chatHistory.push({
-      role: 'system',
-      content: `[AUDIT DATA] URL: ${url} | Performance: ${scores.performance} | SEO: ${scores.seo} | Accessibility: ${scores.accessibility} | Best Practices: ${scores.bestPractices}`
-    });
-
-  } catch (err) {
-    // Fallback with realistic-looking demo data
-    const demoScores = { performance: 47, accessibility: 71, bestPractices: 58, seo: 62 };
-    const getClass = (s) => s >= 90 ? 'good' : s >= 50 ? 'ok' : 'bad';
-    if (resultsEl) {
-      resultsEl.innerHTML = `
-        <div class="audit-scores">
-          <div class="audit-score-card">
-            <div class="score-circle ${getClass(demoScores.performance)}">${demoScores.performance}</div>
-            <div class="score-label">Performance</div>
-          </div>
-          <div class="audit-score-card">
-            <div class="score-circle ${getClass(demoScores.accessibility)}">${demoScores.accessibility}</div>
-            <div class="score-label">Accessibility</div>
-          </div>
-          <div class="audit-score-card">
-            <div class="score-circle ${getClass(demoScores.bestPractices)}">${demoScores.bestPractices}</div>
-            <div class="score-label">Best Practices</div>
-          </div>
-          <div class="audit-score-card">
-            <div class="score-circle ${getClass(demoScores.seo)}">${demoScores.seo}</div>
-            <div class="score-label">SEO</div>
-          </div>
-        </div>
-        <div class="audit-insights">
-          <h4>ONYX ASSESSMENT</h4>
-          <p>Initial scan shows performance issues that are actively costing you traffic. Slow load times on mobile. SEO gaps that competitors are exploiting. WYVN fixes all of this — and fast.</p>
-          <div class="audit-cta-row">
-            <a href="#contact-section" class="btn-primary magnetic">
-              <span>Let's Fix This</span>
-              <div class="btn-glow"></div>
-            </a>
-            <a href="#contact-section" class="btn-ghost">Get Full Report</a>
-          </div>
-        </div>`;
+      // Have ONYX comment on the audit
+      const onyxComment=getAuditOnyxQuip(s.performance, url);
+      setTimeout(()=>{ appendMessage('ONYX',onyxComment); if(voiceEnabled) speakOnyx(onyxComment); },800);
+    }catch(e){
+      results.innerHTML=`<p class="audit-error">Audit failed: ${e.message}. Try a public URL.</p>`;
+    }finally{
+      btnText.textContent='Run Audit';
+      auditBtn.disabled=false;
     }
   }
 
-  if (btnEl) btnEl.textContent = 'Run Audit';
+  function getAuditVerdict(score) {
+    if(score>=90) return "Solid. But 'solid' doesn't win clients — WYVN takes you from good to unforgettable.";
+    if(score>=70) return "Room to grow. Every point you're leaving on the table is money competitors are picking up.";
+    if(score>=50) return "This score is actively costing you clients. Let's fix it — WYVN's done this before.";
+    return "A score like this? Clients are leaving your site before they see what you do. This is fixable. Fast.";
+  }
+
+  function getAuditOnyxQuip(score, url) {
+    const domain=url.replace(/https?:\/\//,'').split('/')[0];
+    if(score>=90) return `${domain} scores well. But technical scores don't close deals — the experience does. WYVN makes sites that feel like something.`;
+    if(score>=70) return `${domain} is middle of the pack. ${score}/100 on performance means you're losing roughly a third of mobile visitors before they even see your offer.`;
+    if(score>=50) return `${domain} is hurting. A ${score} performance score means slow loads, dropped rankings, and impatient clients. WYVN can double that number.`;
+    return `${score}/100. I'll be blunt — ${domain} needs work. That's not an insult, that's a business opportunity. Want WYVN to show you what's possible?`;
+  }
 }
 
 /* ════════════════════════════════════════════════════════
    CONTACT FORM
 ════════════════════════════════════════════════════════ */
 function initContact() {
-  const form = document.getElementById('contact-form');
-  const success = document.getElementById('form-success');
-  const btnText = document.getElementById('form-btn-text');
+  const form=document.getElementById('contact-form');
+  const success=document.getElementById('form-success');
+  const btnText=document.getElementById('form-btn-text');
 
-  form?.addEventListener('submit', async (e) => {
+  form?.addEventListener('submit',async e=>{
     e.preventDefault();
-    if (btnText) btnText.textContent = 'ONYX Processing...';
-
-    const data = Object.fromEntries(new FormData(form));
-
-    // If they submitted a URL, run audit in background
-    if (data.url) {
-      chatHistory.push({
-        role: 'system',
-        content: `[LEAD] Name: ${data.name} | Email: ${data.email} | Company: ${data.company || 'N/A'} | URL: ${data.url} | Goal: ${data.goal} | Package: ${data.package}`
+    if(btnText) btnText.textContent='ONYX Processing...';
+    const data=Object.fromEntries(new FormData(form));
+    try{
+      const res=await fetch(CONFIG.BACKEND+'/api/capture-lead',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({...data, visitor_id:sessionId, audit_score:auditScore})
       });
+      const json=await res.json();
+      // Show proposal typed out in success message
+      form.style.display='none';
+      success?.classList.remove('hidden');
+      if(json.proposal){
+        const propEl=document.getElementById('proposal-text');
+        if(propEl){
+          propEl.textContent='';
+          let i=0;
+          const type=()=>{ if(i<json.proposal.length){propEl.textContent+=json.proposal[i++];requestAnimationFrame(type);} };
+          type();
+        }
+      }
+    }catch{
+      if(btnText) btnText.textContent='Error — Try Again';
     }
-
-    // Store to backend (via entity or Supabase)
-    try {
-      await fetch('/api/capture-lead', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-    } catch { /* Non-blocking */ }
-
-    await new Promise(r => setTimeout(r, 1800));
-
-    form.style.display = 'none';
-    success?.classList.remove('hidden');
   });
 }
 
@@ -1027,155 +739,166 @@ function initContact() {
    FLOATING ONYX PANEL
 ════════════════════════════════════════════════════════ */
 function initFloatingPanel() {
-  const panel = document.getElementById('onyx-float');
-  const closeBtn = document.getElementById('float-close');
-  const reopenBtn = document.getElementById('onyx-reopen');
-  const floatMsg = document.getElementById('float-msg');
-  const floatInput = document.getElementById('float-input');
-  const floatSend = document.getElementById('float-send');
+  const panel=document.getElementById('onyx-float');
+  const closeBtn=document.getElementById('float-close');
+  const reopenBtn=document.getElementById('onyx-reopen');
+  const floatMsg=document.getElementById('float-msg');
+  const floatInput=document.getElementById('float-input');
+  const floatSend=document.getElementById('float-send');
 
-  const scrollMessages = [
-    { pct: 0, msg: "Welcome. I'm ONYX — WYVN's intelligence layer. I'll be here." },
-    { pct: 15, msg: "You're in Services territory. Most clients land on Growth." },
-    { pct: 35, msg: "The audit above is real. Type your URL — I'll show you what I see." },
-    { pct: 55, msg: "You've been here a while. Something catch your eye?" },
-    { pct: 75, msg: "I've been drafting your proposal. One click to see it." },
-    { pct: 90, msg: "Final frame. Ready to be next?" },
+  const SCROLL_MESSAGES=[
+    {pct:0,   msg:"Welcome. I'm ONYX — WYVN's intelligence. I'll be here."},
+    {pct:15,  msg:"You're in Services. Most clients land on Growth. Want to know why?"},
+    {pct:35,  msg:"The audit above is real. Type your URL — I'll show you what I see."},
+    {pct:55,  msg:"Pricing's coming up. Fair warning: our clients say it's the best decision they made this year."},
+    {pct:75,  msg:"You've been here a while. That's not nothing. What's holding you back?"},
+    {pct:90,  msg:"You're at the contact form. I already drafted your proposal. Just fill it in."},
   ];
+  let shownMessages=new Set();
 
-  let idleTimer, lastPct = -1;
-
-  window.addEventListener('scroll', () => {
-    const pct = Math.round((window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100);
-    const match = [...scrollMessages].reverse().find(m => pct >= m.pct);
-    if (match && pct !== lastPct) {
-      floatMsg.textContent = match.msg;
-      lastPct = pct;
-    }
-
-    clearTimeout(idleTimer);
-    idleTimer = setTimeout(() => {
-      floatMsg.textContent = "Still there? I can wait. I never sleep.";
-    }, 30000);
+  addEventListener('scroll',()=>{
+    if(!panel || panel.classList.contains('hidden')) return;
+    const pct=scrollY/(document.body.scrollHeight-innerHeight)*100;
+    SCROLL_MESSAGES.forEach(({pct:threshold,msg})=>{
+      if(pct>=threshold && !shownMessages.has(threshold)){
+        shownMessages.add(threshold);
+        if(floatMsg){
+          floatMsg.textContent='';
+          let i=0;
+          const type=()=>{ if(i<msg.length){floatMsg.textContent+=msg[i++];requestAnimationFrame(type);} };
+          type();
+        }
+      }
+    });
   });
 
-  // Exit intent
-  document.addEventListener('mouseleave', (e) => {
-    if (e.clientY < 10) {
-      floatMsg.textContent = "Leaving? Your competitors aren't.";
-      panel.classList.remove('hidden');
-      reopenBtn.classList.add('hidden');
-    }
-  });
-
-  closeBtn.addEventListener('click', () => {
+  closeBtn?.addEventListener('click',()=>{
     panel.classList.add('hidden');
-    reopenBtn.classList.remove('hidden');
+    reopenBtn?.classList.remove('hidden');
   });
-
-  reopenBtn.addEventListener('click', () => {
-    reopenBtn.classList.add('hidden');
+  reopenBtn?.addEventListener('click',()=>{
     panel.classList.remove('hidden');
+    reopenBtn?.classList.add('hidden');
   });
 
-  floatSend.addEventListener('click', () => {
-    if (floatInput.value.trim()) {
-      // Send to main chat
-      const mainMessages = document.getElementById('chat-messages');
-      appendMessage(mainMessages, floatInput.value, 'user');
-      sendMessage(floatInput.value, 'float');
-      floatInput.value = '';
-      // Scroll to chat
-      document.getElementById('onyx-section')?.scrollIntoView({ behavior: 'smooth' });
-    }
-  });
-
-  floatInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') floatSend.click();
-  });
+  const sendFloat=async()=>{
+    const msg=floatInput?.value.trim();
+    if(!msg) return;
+    floatInput.value='';
+    chatHistory.push({role:'user',content:msg});
+    try{
+      const res=await fetch(CONFIG.BACKEND+'/api/onyx-chat',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({messages:chatHistory,visitor_id:sessionId,audit_score:auditScore,time_on_page:timeOnPage,sections_visited:sectionsVisited,return_visitor:isReturnVisitor})
+      });
+      const data=await res.json();
+      const reply=data.reply||'...';
+      chatHistory.push({role:'assistant',content:reply});
+      if(floatMsg){
+        floatMsg.textContent='';
+        let i=0;
+        const type=()=>{ if(i<reply.length){floatMsg.textContent+=reply[i++];requestAnimationFrame(type);} };
+        type();
+      }
+      if(voiceEnabled) speakOnyx(reply);
+    }catch{ if(floatMsg) floatMsg.textContent='[signal disrupted]'; }
+  };
+  floatSend?.addEventListener('click',sendFloat);
+  floatInput?.addEventListener('keydown',e=>{ if(e.key==='Enter') sendFloat(); });
 }
 
 /* ════════════════════════════════════════════════════════
-   MODALS (Privacy & Terms)
+   SOCIAL PROOF TOASTS
 ════════════════════════════════════════════════════════ */
-function initModals() {
-  const overlay = document.getElementById('modal-overlay');
-  const closeBtn = document.getElementById('modal-close');
-  const title = document.getElementById('modal-title');
-  const body = document.getElementById('modal-body');
+function initSocialProof() {
+  const container=document.getElementById('social-proof-container');
+  if(!container) return;
 
-  const PRIVACY = `
-    <h4>Information We Collect</h4>
-    <p>Name, email, company, project details you provide directly, plus usage data from visits. ONYX processes behavioral session data to personalize your experience.</p>
-    <h4>How We Use It</h4>
-    <p>To respond to inquiries, deliver services, and improve our platform. We never sell, rent, or trade your data.</p>
-    <h4>ONYX AI</h4>
-    <p>Powered by Anthropic Claude and ElevenLabs voice. Session data is not used to train external AI models.</p>
-    <h4>Your Rights</h4>
-    <p>Request access, correction, or deletion at legal@wyvn.io within 5 business days.</p>
-    <h4>Contact</h4>
-    <p>WYVN LLC · Houston, Texas · legal@wyvn.io</p>
-  `;
-
-  const TERMS = `
-    <h4>Services</h4>
-    <p>Web design, development, brand identity, AI integration, digital growth. All scopes defined in signed agreements before work begins.</p>
-    <h4>Payment</h4>
-    <p>50% non-refundable deposit before work starts. Balance due at completion.</p>
-    <h4>Revisions</h4>
-    <p>3 rounds included. Additional revisions at $150/hour.</p>
-    <h4>Intellectual Property</h4>
-    <p>Full ownership transfers to client upon final payment. WYVN retains portfolio rights.</p>
-    <h4>Liability</h4>
-    <p>Limited to total amount paid for the specific service.</p>
-    <h4>Governing Law</h4>
-    <p>Texas. Disputes in Houston, Harris County, TX.</p>
-  `;
-
-  function openModal(t, content) {
-    title.textContent = t;
-    body.innerHTML = content;
-    overlay.classList.remove('hidden');
-  }
-
-  document.getElementById('privacy-link')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    openModal('Privacy Policy', `<p style="color:var(--muted);font-size:0.75rem;margin-bottom:1rem;">Effective January 1, 2025 · WYVN LLC · Houston, TX</p>` + PRIVACY);
-  });
-
-  document.getElementById('terms-link')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    openModal('Terms of Service', `<p style="color:var(--muted);font-size:0.75rem;margin-bottom:1rem;">Effective January 1, 2025 · WYVN LLC · Houston, TX</p>` + TERMS);
-  });
-
-  closeBtn?.addEventListener('click', () => overlay.classList.add('hidden'));
-  overlay?.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.add('hidden'); });
+  fetch(CONFIG.BACKEND+'/api/social-proof')
+    .then(r=>r.json())
+    .then(data=>{
+      const proofs=data.proof||[];
+      let idx=0;
+      const showNext=()=>{
+        if(!proofs.length) return;
+        const p=proofs[idx%proofs.length]; idx++;
+        const toast=document.createElement('div');
+        toast.className='social-toast';
+        toast.innerHTML=`
+          <div class="toast-avatar">${p.name[0]}</div>
+          <div class="toast-info">
+            <strong>${p.name}</strong> from ${p.location}
+            <span>${p.action}</span>
+            <small>${p.time}</small>
+          </div>`;
+        container.appendChild(toast);
+        setTimeout(()=>toast.classList.add('visible'),50);
+        setTimeout(()=>{
+          toast.classList.remove('visible');
+          setTimeout(()=>toast.remove(),400);
+        },4500);
+        setTimeout(showNext, 8000+Math.random()*6000);
+      };
+      setTimeout(showNext, 5000);
+    }).catch(()=>{});
 }
 
 /* ════════════════════════════════════════════════════════
-   SMOOTH SCROLL
+   ACTIVE VISITOR COUNT
 ════════════════════════════════════════════════════════ */
-document.addEventListener('click', (e) => {
-  const anchor = e.target.closest('a[href^="#"]');
-  if (!anchor) return;
-  const target = document.querySelector(anchor.getAttribute('href'));
-  if (target) {
-    e.preventDefault();
-    target.scrollIntoView({ behavior: 'smooth' });
-  }
-});
+function initActiveVisitors() {
+  const el=document.getElementById('active-visitors-count');
+  const update=()=>{
+    fetch(CONFIG.BACKEND+'/api/active')
+      .then(r=>r.json())
+      .then(d=>{ if(el) el.textContent=d.active||1; activeVisitors=d.active||1; })
+      .catch(()=>{ if(el) el.textContent='1'; });
+  };
+  update();
+  setInterval(update, 30000);
+}
 
 /* ════════════════════════════════════════════════════════
-   BOOT
+   VISITOR PING + SCROLL TRACKING
 ════════════════════════════════════════════════════════ */
-document.addEventListener('DOMContentLoaded', () => {
+function pingVisitor() {
+  const device=innerWidth<768?'mobile':innerWidth<1200?'tablet':'desktop';
+  const browser=navigator.userAgent.includes('Chrome')?'Chrome':
+                 navigator.userAgent.includes('Firefox')?'Firefox':
+                 navigator.userAgent.includes('Safari')?'Safari':'Other';
+  fetch(CONFIG.BACKEND+'/api/visitor',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      session_id:sessionId, action:'ping',
+      data:{device_type:device, browser, referrer:document.referrer||null, landing_page:location.pathname, return_visitor:isReturnVisitor}
+    })
+  }).catch(()=>{});
+  // Ping every 2 min to track active session
+  setInterval(()=>{
+    fetch(CONFIG.BACKEND+'/api/visitor',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({session_id:sessionId,action:'update',data:{interacted_with_onyx:chatHistory.length>0,pages_viewed:1,time_on_site:timeOnPage,scrolled_depth:maxScrollDepth}})
+    }).catch(()=>{});
+  },120000);
+}
+
+let maxScrollDepth=0;
+function initScrollTracking() {
+  addEventListener('scroll',()=>{
+    const depth=Math.round(scrollY/(document.body.scrollHeight-innerHeight)*100);
+    maxScrollDepth=Math.max(maxScrollDepth,depth);
+  });
+}
+
+function startTimeTracking() {
+  setInterval(()=>{ timeOnPage++; },1000);
+}
+
+/* ════════════════════════════════════════════════════════
+   INIT
+════════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded',()=>{
   initGrain();
+  initCursor();
   initEntry();
-
-  // Console easter egg
-  console.log('%c W Y V N ', 'background:#00D4FF;color:#030308;font-size:28px;font-weight:900;padding:8px 20px;letter-spacing:0.2em;');
-  console.log('%c We Build What Doesn\'t Exist Yet ', 'color:#C9A96E;font-style:italic;font-size:13px;');
-  console.log('%c ONYX v2.0.1 — Intelligence Layer Active ', 'color:#6B2FD4;font-size:11px;');
-  console.log('%c hello@wyvn.io · Houston, TX ', 'color:#6A6260;font-size:10px;');
-  console.log('%c 👀 You found the console. ONYX is watching. ', 'color:#00D4FF;font-size:11px;');
 });
