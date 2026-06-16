@@ -1,20 +1,40 @@
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-
 [build]
   publish = "."
 
 [[headers]]
   for = "/*"
   [headers.values]
-    X-Frame-Options = "DENY"
+    X-Frame-Options = "SAMEORIGIN"
     X-XSS-Protection = "1; mode=block"
     Content-Security-Policy = "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:;"
-    Cache-Control = "public, max-age=31536000"
 
 [[headers]]
   for = "/*.html"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
+
+# Serve pitch.html at /pitch
+[[redirects]]
+  from = "/pitch"
+  to = "/pitch.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/pitch/*"
+  to = "/pitch.html"
+  status = 200
+  force = true
+
+# Serve signature.html at /signature  
+[[redirects]]
+  from = "/signature"
+  to = "/signature.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/signature/*"
+  to = "/signature.html"
+  status = 200
+  force = true
